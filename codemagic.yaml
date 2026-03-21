@@ -6,6 +6,9 @@ workflows:
     environment:
       flutter: stable
 
+    integrations:
+      app_store_connect: true
+
     scripts:
       - name: Get packages
         script: flutter pub get
