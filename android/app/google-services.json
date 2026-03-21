@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "188755482879",
+    "project_id": "dvapp-87029",
+    "storage_bucket": "dvapp-87029.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:188755482879:android:4a605c37295830471454ca",
+        "android_client_info": {
+          "package_name": "com.projectowner.dvapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoKLnbpGsSDPtP56Z58MKD41BsC1-i4vA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

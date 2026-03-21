@@ -1,0 +1,77 @@
+name: mot_booking_helper
+description: "Motoring information and links for Northern Ireland"
+publish_to: "none"
+
+version: 2.1.0+13
+
+environment:
+  sdk: ">=3.7.2 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Billing / subscriptions
+  in_app_purchase: ^3.2.3
+  in_app_purchase_android: ^0.4.0
+
+  # Storage
+  shared_preferences: ^2.2.3
+
+  # UI & calendar
+  table_calendar: ^3.1.2
+  cupertino_icons: ^1.0.8
+  intl: ^0.20.0
+
+  # External links
+  url_launcher: ^6.3.0
+
+  # AdMob
+  google_mobile_ads: ^7.0.0
+
+  # Firebase (news/admin system)
+  firebase_core: ^3.4.0
+  cloud_firestore: ^5.4.0
+  firebase_auth: ^5.2.0
+
+  # Notifications
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # App icon generator
+  flutter_launcher_icons: ^0.13.1
+
+  # Splash screen generator
+  flutter_native_splash: ^2.4.0
+
+flutter:
+  uses-material-design: true
+
+# -----------------------------
+# APP ICON CONFIG
+# -----------------------------
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#0B3A8A"
+  adaptive_icon_foreground: "assets/icon/icon.png"
+
+# -----------------------------
+# SPLASH SCREEN CONFIG
+# -----------------------------
+flutter_native_splash:
+  color: "#0B3A8A"
+  image: "assets/icon/splash.png"
+  android: true
+  ios: true
+
+  # Android 12+ splash handling
+  android_12:
+    color: "#0B3A8A"
+    image: "assets/icon/splash.png"
