@@ -1,21 +1,19 @@
 workflows:
   ios-release:
     name: iOS Release Build
-
+    max_build_duration: 60
     environment:
       flutter: stable
       xcode: latest
-
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.dvapp.mothelper
-
     integrations:
       app_store_connect: MOT Booking Helper
-
     scripts:
-      - flutter pub get
-      - flutter build ipa --release
-
+      - name: Get packages
+        script: flutter pub get
+      - name: Build iOS IPA
+        script: flutter build ipa --release
     artifacts:
       - build/ios/ipa/*.ipa
