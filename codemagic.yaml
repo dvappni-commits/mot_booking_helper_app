@@ -3,13 +3,9 @@ workflows:
     name: iOS Release Build
 
     environment:
-      flutter: stable
-      xcode: latest
       ios_signing:
-        certificates:
-          - ios_distribution_cert
-        provisioning_profiles:
-          - mothelper_profile
+        distribution_type: app_store
+        bundle_identifier: com.dvapp.mothelper
 
     integrations:
       app_store_connect: MOT Booking Helper
@@ -18,10 +14,7 @@ workflows:
       - name: Get packages
         script: flutter pub get
 
-      - name: Set up code signing
-        script: xcode-project use-profiles --project ios/Runner.xcodeproj
-
-      - name: Build iOS IPA
+      - name: Build iOS
         script: flutter build ipa --release
 
     artifacts:
