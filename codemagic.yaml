@@ -16,7 +16,7 @@ workflows:
       - name: Get packages
         script: flutter pub get
 
-      - name: Apply provisioning profiles
+      - name: Set up code signing
         script: xcode-project use-profiles
 
       - name: Build iOS IPA
