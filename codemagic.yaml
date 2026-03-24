@@ -15,19 +15,19 @@ workflows:
       app_store_connect: MOT Booking Helper
 
     scripts:
-  - name: Get packages
-    script: flutter pub get
+      - name: Get packages
+        script: flutter pub get
 
-  - name: Install CocoaPods
-    script: |
-      cd ios
-      pod install
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod install
 
-  - name: Set up code signing
-    script: xcode-project use-profiles
+      - name: Set up code signing
+        script: xcode-project use-profiles
 
-  - name: Build iOS IPA
-    script: flutter build ipa --release
+      - name: Build iOS IPA
+        script: flutter build ipa --release
 
     artifacts:
       - build/ios/ipa/*.ipa
