@@ -4,10 +4,10 @@
 <dict>
     <key>method</key>
     <string>app-store</string>
-
     <key>signingStyle</key>
     <string>manual</string>
-
+    <key>teamID</key>
+    <string>3HA975BSA9</string>
     <key>provisioningProfiles</key>
     <dict>
         <key>com.dvapp.mothelper</key>
