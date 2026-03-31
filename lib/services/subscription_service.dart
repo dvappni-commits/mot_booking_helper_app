@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,16 +9,17 @@ class SubscriptionService {
 
   static const String _kPrefSubscribed = 'is_subscribed';
 
-  /// MUST match Play Console Product ID exactly
-  static const String kTradeSubscriptionId = 'trade_monthly';
+  // Product IDs must match the store exactly
+  static const String _kAndroidSubscriptionId = 'trade_monthly';
+  static const String _kiOSSubscriptionId = 'mot_premium_monthly';
+
+  static String get kTradeSubscriptionId =>
+      Platform.isIOS ? _kiOSSubscriptionId : _kAndroidSubscriptionId;
 
   static final InAppPurchase _iap = InAppPurchase.instance;
   static StreamSubscription<List<PurchaseDetails>>? _sub;
 
-  /// Simple local flag for UI gating
   static bool isSubscribed = false;
-
-  /// Optional UI notifier (if you use ValueListenableBuilder)
   static final ValueNotifier<bool> subscribed = ValueNotifier<bool>(false);
 
   static ProductDetails? tradeProduct;
@@ -30,7 +32,6 @@ class SubscriptionService {
     final available = await _iap.isAvailable();
     if (!available) return;
 
-    // Listen for purchase updates
     _sub ??= _iap.purchaseStream.listen(
           (purchases) async {
         await _handlePurchases(purchases);
@@ -40,10 +41,7 @@ class SubscriptionService {
       },
     );
 
-    // Fetch product details for UI
     tradeProduct = await fetchProduct();
-
-    // Trigger restore (this will feed into purchaseStream)
     await restorePurchases();
   }
 
@@ -67,19 +65,17 @@ class SubscriptionService {
     return response.productDetails.first;
   }
 
-  /// Called by your PaywallScreen
   static Future<void> buyTradeMonthly() async {
     final product = tradeProduct ?? await fetchProduct();
     if (product == null) {
       throw Exception(
-        'Subscription product not found. Check Play Console Product ID and that the app is installed from Internal Testing via Play Store.',
+        Platform.isIOS
+            ? 'Subscription product not found. Check that the Product ID matches App Store Connect exactly and that the app is installed from TestFlight.'
+            : 'Subscription product not found. Check that the Product ID matches Google Play Console exactly and that the app is installed from Internal Testing via Play Store.',
       );
     }
 
     final purchaseParam = PurchaseParam(productDetails: product);
-
-    // Subscriptions are purchased via buyNonConsumable in this plugin.
-    // Free trial is applied by Google automatically if your offer is active + user eligible.
     await _iap.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
@@ -87,13 +83,13 @@ class SubscriptionService {
     bool foundActive = false;
 
     for (final p in purchases) {
-      // Complete purchases when required
       if (p.pendingCompletePurchase) {
         await _iap.completePurchase(p);
       }
 
       final okStatus =
-          p.status == PurchaseStatus.purchased || p.status == PurchaseStatus.restored;
+          p.status == PurchaseStatus.purchased ||
+              p.status == PurchaseStatus.restored;
 
       final isOurProduct = p.productID == kTradeSubscriptionId;
 

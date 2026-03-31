@@ -2,7 +2,7 @@ name: mot_booking_helper
 description: "Motoring information and links for Northern Ireland"
 publish_to: "none"
 
-version: 2.1.0+16
+version: 2.1.0+17
 
 environment:
   sdk: ">=3.7.2 <4.0.0"
