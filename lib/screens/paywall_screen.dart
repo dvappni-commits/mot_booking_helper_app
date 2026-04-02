@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/subscription_service.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -12,6 +13,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _loading = false;
   String? _error;
 
+  static final Uri _termsUrl = Uri.parse(
+    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+  );
+
+  // Replace this with your real privacy policy URL
+  static final Uri _privacyUrl = Uri.parse(
+    'https://dvappni-commits.github.io/dvapp.github.io/privacy.html',
+  );
+
   @override
   void initState() {
     super.initState();
@@ -19,7 +29,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _ensureProductLoaded() async {
-    // If already cached, nothing to do
     if (SubscriptionService.tradeProduct != null) return;
 
     setState(() {
@@ -29,7 +38,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       final p = await SubscriptionService.fetchProduct();
-      // cache it for UI
       SubscriptionService.tradeProduct = p;
       if (!mounted) return;
       setState(() {});
@@ -50,8 +58,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       await SubscriptionService.buyTradeMonthly();
-      // SubscriptionService listener updates subscribed + isSubscribed.
-      // Paywall will auto-close via ValueListenableBuilder below.
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
@@ -85,9 +91,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
+  Future<void> _openUrl(Uri uri) async {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = SubscriptionService.tradeProduct;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Trade Access')),
@@ -96,16 +107,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
         child: ValueListenableBuilder<bool>(
           valueListenable: SubscriptionService.subscribed,
           builder: (context, isSubbed, _) {
-            // Auto-close the paywall when subscription becomes active
             if (isSubbed) {
-              // Delay pop to avoid setState during build issues
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) Navigator.pop(context);
               });
             }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return ListView(
               children: [
                 const Text(
                   'Trade features require a subscription',
@@ -113,13 +121,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
+                  'Unlock premium trade tools including:',
+                ),
+                const SizedBox(height: 8),
+                const Text(
                   '• MOT calendar\n'
                       '• Import from email\n'
                       '• Trade notifications\n'
                       '• Trade updates',
                 ),
                 const SizedBox(height: 16),
-
                 if (isSubbed)
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -143,46 +154,105 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           ? 'Loading subscription…'
                           : 'Subscription product not found.\n\n'
                           'Check:\n'
-                          '1) Product ID in code matches Play Console\n'
-                          '2) Subscription + base plan are Active\n'
-                          '3) You installed from Internal testing via Play Store\n\n'
+                          '1) Product ID in code matches App Store Connect / Google Play\n'
+                          '2) Subscription is active and attached correctly\n'
+                          '3) On iPhone, install from TestFlight\n'
+                          '4) On Android, install from Play internal testing\n\n'
                           'Product ID expected: ${SubscriptionService.kTradeSubscriptionId}',
                     ),
                   )
                 else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [],
-                  ),
-
-                if (product != null && !isSubbed) ...[
-                  Text(
-                    '${product.title}\n${product.price} / month',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 10),
-                  const Row(
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Cancel anytime',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.25),
                       ),
-                    ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.title,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${product.price} per month',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Subscription length: 1 month',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Includes MOT calendar access, trade notifications, import from email, and trade updates during each subscription period.',
+                        ),
+                        const SizedBox(height: 10),
+                        const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 18),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Row(
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Cancel anytime',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ],
-
-                const Spacer(),
-
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => _openUrl(_termsUrl),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  child: const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Terms of Use'),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _openUrl(_privacyUrl),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  child: const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Privacy Policy'),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
