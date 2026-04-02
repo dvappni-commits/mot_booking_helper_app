@@ -9,7 +9,6 @@ class SubscriptionService {
 
   static const String _kPrefSubscribed = 'is_subscribed';
 
-  // Product IDs must match the store exactly
   static const String _kAndroidSubscriptionId = 'trade_monthly';
   static const String _kiOSSubscriptionId = 'mot_premium_monthly';
 
@@ -30,19 +29,30 @@ class SubscriptionService {
     subscribed.value = isSubscribed;
 
     final available = await _iap.isAvailable();
-    if (!available) return;
+    debugPrint('IAP available: $available');
+
+    if (!available) {
+      tradeProduct = null;
+      return;
+    }
 
     _sub ??= _iap.purchaseStream.listen(
           (purchases) async {
         await _handlePurchases(purchases);
       },
-      onError: (_) {
-        // ignore for now
+      onError: (error) {
+        debugPrint('Purchase stream error: $error');
+      },
+      onDone: () {
+        debugPrint('Purchase stream closed');
       },
     );
 
     tradeProduct = await fetchProduct();
-    await restorePurchases();
+
+    // Do not auto-restore during startup while debugging App Review / TestFlight
+    // because it can hide the real product-loading issue.
+    // Call restorePurchases() only when the user taps "Restore purchase".
   }
 
   static Future<void> dispose() async {
@@ -52,37 +62,83 @@ class SubscriptionService {
 
   static Future<void> restorePurchases() async {
     try {
+      debugPrint('Restoring purchases...');
       await _iap.restorePurchases();
-    } catch (_) {
-      // ignore
+    } catch (e) {
+      debugPrint('Restore purchases failed: $e');
+      rethrow;
     }
   }
 
   static Future<ProductDetails?> fetchProduct() async {
-    final response = await _iap.queryProductDetails({kTradeSubscriptionId});
-    if (response.notFoundIDs.isNotEmpty) return null;
-    if (response.productDetails.isEmpty) return null;
-    return response.productDetails.first;
+    final available = await _iap.isAvailable();
+    debugPrint('fetchProduct -> store available: $available');
+    debugPrint('fetchProduct -> product id: $kTradeSubscriptionId');
+    debugPrint('fetchProduct -> platform: ${Platform.operatingSystem}');
+
+    if (!available) {
+      debugPrint('Store is not available');
+      return null;
+    }
+
+    final ProductDetailsResponse response =
+    await _iap.queryProductDetails({kTradeSubscriptionId});
+
+    debugPrint(
+      'fetchProduct -> productDetails count: ${response.productDetails.length}',
+    );
+    debugPrint('fetchProduct -> notFoundIDs: ${response.notFoundIDs}');
+    debugPrint('fetchProduct -> error: ${response.error}');
+
+    if (response.error != null) {
+      throw Exception(
+        'Store query failed: ${response.error!.message}',
+      );
+    }
+
+    if (response.notFoundIDs.isNotEmpty) {
+      return null;
+    }
+
+    if (response.productDetails.isEmpty) {
+      return null;
+    }
+
+    final product = response.productDetails.first;
+    debugPrint(
+      'fetchProduct -> found product: ${product.id} | ${product.title} | ${product.price}',
+    );
+
+    return product;
   }
 
   static Future<void> buyTradeMonthly() async {
     final product = tradeProduct ?? await fetchProduct();
+
     if (product == null) {
       throw Exception(
         Platform.isIOS
-            ? 'Subscription product not found. Check that the Product ID matches App Store Connect exactly and that the app is installed from TestFlight.'
+            ? 'Subscription product not found. Check that the Product ID matches App Store Connect exactly, the subscription is attached to the app version, and the app is installed from TestFlight.'
             : 'Subscription product not found. Check that the Product ID matches Google Play Console exactly and that the app is installed from Internal Testing via Play Store.',
       );
     }
 
     final purchaseParam = PurchaseParam(productDetails: product);
+
+    debugPrint('Starting purchase for ${product.id}');
     await _iap.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
-  static Future<void> _handlePurchases(List<PurchaseDetails> purchases) async {
+  static Future<void> _handlePurchases(
+      List<PurchaseDetails> purchases,
+      ) async {
     bool foundActive = false;
 
     for (final p in purchases) {
+      debugPrint(
+        'Purchase update -> product: ${p.productID}, status: ${p.status}',
+      );
+
       if (p.pendingCompletePurchase) {
         await _iap.completePurchase(p);
       }
@@ -107,5 +163,7 @@ class SubscriptionService {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kPrefSubscribed, value);
+
+    debugPrint('Subscription state updated: $value');
   }
 }
