@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/news_service.dart';
 import '../services/admin_service.dart';
@@ -15,7 +17,6 @@ class TradeNewsScreen extends StatefulWidget {
 
 class _TradeNewsScreenState extends State<TradeNewsScreen> {
   Future<void> _openAdminEditor() async {
-    // Always force a fresh login (even you)
     await AdminService.signOut();
 
     if (!mounted) return;
@@ -28,7 +29,6 @@ class _TradeNewsScreenState extends State<TradeNewsScreen> {
     if (ok != true) return;
     if (!mounted) return;
 
-    // Extra guard
     if (!AdminService.isLoggedIn || !AdminService.isAdmin) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Admin access denied')),
@@ -42,7 +42,6 @@ class _TradeNewsScreenState extends State<TradeNewsScreen> {
       MaterialPageRoute(builder: (_) => const AdminNewsEditorScreen()),
     );
 
-    // Force sign-out after editing so it asks every time
     await AdminService.signOut();
 
     if (!mounted) return;
@@ -53,6 +52,105 @@ class _TradeNewsScreenState extends State<TradeNewsScreen> {
         const SnackBar(content: Text('News refreshed')),
       );
     }
+  }
+
+  Future<void> _openLink(String rawUrl) async {
+    String url = rawUrl.trim();
+
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+
+    final uri = Uri.tryParse(url);
+
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid link')),
+      );
+      return;
+    }
+
+    final ok = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $url')),
+      );
+    }
+  }
+
+  List<InlineSpan> _buildLinkTextSpans(
+      String text,
+      TextStyle? normalStyle,
+      TextStyle? linkStyle,
+      ) {
+    final regex = RegExp(
+      r'((https?:\/\/)?(www\.)?[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}([\/\w\-\.\?\=\&\#\%\+\~:]*)?)',
+      caseSensitive: false,
+    );
+
+    final spans = <InlineSpan>[];
+    int start = 0;
+
+    for (final match in regex.allMatches(text)) {
+      if (match.start > start) {
+        spans.add(
+          TextSpan(
+            text: text.substring(start, match.start),
+            style: normalStyle,
+          ),
+        );
+      }
+
+      final matchedText = match.group(0)!;
+
+      spans.add(
+        TextSpan(
+          text: matchedText,
+          style: linkStyle,
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              _openLink(matchedText);
+            },
+        ),
+      );
+
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(start),
+          style: normalStyle,
+        ),
+      );
+    }
+
+    return spans;
+  }
+
+  Widget _buildLinkableText(
+      BuildContext context,
+      String text, {
+        TextStyle? style,
+      }) {
+    final defaultStyle = style ?? Theme.of(context).textTheme.bodyLarge;
+    final linkStyle = (defaultStyle ?? const TextStyle()).copyWith(
+      color: Colors.blue,
+      decoration: TextDecoration.underline,
+      fontWeight: FontWeight.w500,
+    );
+
+    return RichText(
+      text: TextSpan(
+        children: _buildLinkTextSpans(text, defaultStyle, linkStyle),
+      ),
+    );
   }
 
   @override
@@ -83,12 +181,8 @@ class _TradeNewsScreenState extends State<TradeNewsScreen> {
           final line1 = (data?['line1'] as String?)?.trim();
           final line2 = (data?['line2'] as String?)?.trim();
 
-          final hasAnything = [
-            title,
-            body,
-            line1,
-            line2,
-          ].any((x) => x != null && x.isNotEmpty);
+          final hasAnything = [title, body, line1, line2]
+              .any((x) => x != null && x.isNotEmpty);
 
           if (!hasAnything) {
             return const Center(
@@ -102,37 +196,32 @@ class _TradeNewsScreenState extends State<TradeNewsScreen> {
             );
           }
 
+          final titleStyle = Theme.of(context).textTheme.headlineSmall
+              ?.copyWith(fontWeight: FontWeight.bold);
+          final lineStyle = Theme.of(context).textTheme.titleMedium;
+          final bodyStyle = Theme.of(context).textTheme.bodyLarge;
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Text(
                 (title == null || title.isEmpty) ? 'News' : title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: titleStyle,
               ),
               const SizedBox(height: 12),
 
               if (line1 != null && line1.isNotEmpty) ...[
-                Text(
-                  line1,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 6),
+                _buildLinkableText(context, line1, style: lineStyle),
+                const SizedBox(height: 8),
               ],
+
               if (line2 != null && line2.isNotEmpty) ...[
-                Text(
-                  line2,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                _buildLinkableText(context, line2, style: lineStyle),
                 const SizedBox(height: 12),
               ],
 
               if (body != null && body.isNotEmpty)
-                Text(
-                  body,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
+                _buildLinkableText(context, body, style: bodyStyle),
             ],
           );
         },
