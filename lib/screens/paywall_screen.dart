@@ -17,7 +17,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
   );
 
-  // Replace this with your real privacy policy URL
   static final Uri _privacyUrl = Uri.parse(
     'https://dvappni-commits.github.io/dvapp.github.io/privacy.html',
   );
@@ -92,7 +91,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _openUrl(Uri uri) async {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open link')),
+      );
+    }
   }
 
   @override
@@ -101,7 +105,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Trade Access')),
+      appBar: AppBar(
+        title: const Text('Trade Access'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: ValueListenableBuilder<bool>(
@@ -117,11 +123,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
               children: [
                 const Text(
                   'Trade features require a subscription',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   'Unlock premium trade tools including:',
+                  style: TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -129,17 +139,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       '• Import from email\n'
                       '• Trade notifications\n'
                       '• Trade updates',
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
+
                 if (isSubbed)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.green.withOpacity(0.4)),
+                      border: Border.all(
+                        color: Colors.green.withOpacity(0.4),
+                      ),
                     ),
-                    child: const Text('✅ You are subscribed.'),
+                    child: const Text(
+                      'You are subscribed.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   )
                 else if (product == null)
                   Container(
@@ -147,7 +167,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     decoration: BoxDecoration(
                       color: Colors.orange.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                      border: Border.all(
+                        color: Colors.orange.withOpacity(0.4),
+                      ),
                     ),
                     child: Text(
                       _loading
@@ -163,12 +185,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: theme.colorScheme.primary.withOpacity(0.25),
+                        color: theme.colorScheme.primary.withOpacity(0.22),
                       ),
                     ),
                     child: Column(
@@ -177,57 +199,70 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         Text(
                           product.title,
                           style: const TextStyle(
-                            fontSize: 17,
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 14),
                         Text(
                           '${product.price} per month',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '1-month auto-renewing subscription',
+                          style: TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Includes MOT calendar access, trade notifications, import from email, and trade updates during each subscription period.',
+                          style: TextStyle(fontSize: 15, height: 1.4),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'Includes a free trial for eligible new subscribers.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'After any introductory period, billing continues at the monthly price shown above unless cancelled.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            height: 1.35,
                           ),
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'Subscription length: 1 month',
-                          style: TextStyle(fontWeight: FontWeight.w500),
+                          'Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            height: 1.35,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Includes MOT calendar access, trade notifications, import from email, and trade updates during each subscription period.',
-                        ),
-                        const SizedBox(height: 10),
-                        const Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.check_circle_outline, size: 18),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Row(
-                          children: [
-                            Icon(Icons.check_circle_outline, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'Cancel anytime',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                          'Manage or cancel in your Apple ID account settings.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                          ),
                         ),
                       ],
                     ),
                   ),
+
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(
@@ -235,24 +270,28 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     style: const TextStyle(color: Colors.red),
                   ),
                 ],
+
                 const SizedBox(height: 20),
+
                 TextButton(
                   onPressed: () => _openUrl(_termsUrl),
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                  child: const Align(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
-                    child: Text('Terms of Use'),
                   ),
+                  child: const Text('Terms of Use'),
                 ),
                 TextButton(
                   onPressed: () => _openUrl(_privacyUrl),
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                  child: const Align(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
-                    child: Text('Privacy Policy'),
                   ),
+                  child: const Text('Privacy Policy'),
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(height: 24),
+
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -260,11 +299,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         ? null
                         : _subscribe,
                     child: Text(
-                      _loading ? 'Please wait…' : 'Start 30-day free trial',
+                      _loading
+                          ? 'Please wait…'
+                          : product == null
+                          ? 'Subscribe'
+                          : 'Subscribe ${product.price} per month',
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
@@ -272,7 +317,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     child: const Text('Restore purchase'),
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Maybe later'),
